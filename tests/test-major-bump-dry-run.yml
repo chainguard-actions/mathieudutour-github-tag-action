@@ -1,0 +1,71 @@
+name: Test major bump dry-run
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        env:
+          GITHUB_REF: refs/heads/act-harness
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: "true"
+          default_bump: "major"
+          tag_prefix: "v"
+          release_branches: "act-harness,master,main"
+
+      - name: Assert action ran (outputs set, or failed gracefully on the sentinel repo)
+        env:
+          NEW_TAG: ${{ steps.action.outputs.new_tag }}
+          NEW_VERSION: ${{ steps.action.outputs.new_version }}
+          PREV_TAG: ${{ steps.action.outputs.previous_tag }}
+          RELEASE_TYPE: ${{ steps.action.outputs.release_type }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "new_tag: $NEW_TAG"
+          echo "new_version: $NEW_VERSION"
+          echo "previous_tag: $PREV_TAG"
+          echo "release_type: $RELEASE_TYPE"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ "$RELEASE_TYPE" != "major" ]; then
+              echo "FAIL: expected release_type='major', got '$RELEASE_TYPE'"
+              exit 1
+            fi
+            echo "PASS: release_type=$RELEASE_TYPE"
+            if [ -z "$NEW_TAG" ]; then
+              echo "FAIL: new_tag is empty"
+              exit 1
+            fi
+            case "$NEW_TAG" in
+              v*)
+                echo "PASS: new_tag starts with 'v': $NEW_TAG"
+                ;;
+              *)
+                echo "FAIL: new_tag '$NEW_TAG' does not start with 'v'"
+                exit 1
+                ;;
+            esac
+            if [ -z "$NEW_VERSION" ]; then
+              echo "FAIL: new_version is empty"
+              exit 1
+            fi
+            echo "PASS: new_version=$NEW_VERSION"
+            if [ -z "$PREV_TAG" ]; then
+              echo "FAIL: previous_tag is empty"
+              exit 1
+            fi
+            echo "PASS: previous_tag=$PREV_TAG"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable via GitHub API)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

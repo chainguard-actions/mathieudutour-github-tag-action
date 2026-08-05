@@ -1,0 +1,10 @@
+{
+  "status": "unbundlable",
+  "entries": [
+    {
+      "path": "lib/main.js",
+      "status": "unbundlable",
+      "reason": "Could not resolve \"tunnel\""
+    }
+  ]
+}

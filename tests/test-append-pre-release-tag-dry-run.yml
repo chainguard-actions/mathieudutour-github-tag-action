@@ -1,0 +1,45 @@
+name: Test append_to_pre_release_tag input (dry run)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - id: action
+        uses: .
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: "true"
+          append_to_pre_release_tag: "beta"
+          default_bump: "patch"
+      - name: Assert outputs are set
+        env:
+          NEW_TAG: ${{ steps.action.outputs.new_tag }}
+          NEW_VERSION: ${{ steps.action.outputs.new_version }}
+          PREVIOUS_TAG: ${{ steps.action.outputs.previous_tag }}
+          RELEASE_TYPE: ${{ steps.action.outputs.release_type }}
+        run: |
+          echo "new_tag: $NEW_TAG"
+          echo "new_version: $NEW_VERSION"
+          echo "previous_tag: $PREVIOUS_TAG"
+          echo "release_type: $RELEASE_TYPE"
+          if [ -z "$NEW_TAG" ]; then
+            echo "FAIL: new_tag output is empty"
+            exit 1
+          fi
+          if [ -z "$NEW_VERSION" ]; then
+            echo "FAIL: new_version output is empty"
+            exit 1
+          fi
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "FAIL: previous_tag output is empty"
+            exit 1
+          fi
+          if [ -z "$RELEASE_TYPE" ]; then
+            echo "FAIL: release_type output is empty"
+            exit 1
+          fi
+          echo "PASS: all outputs set"
