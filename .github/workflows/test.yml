@@ -1,0 +1,19 @@
+name: "Test typescript-action"
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+      - run: npm ci
+      - run: npm run test
+      - run: npm run check
+      - run: npm run build

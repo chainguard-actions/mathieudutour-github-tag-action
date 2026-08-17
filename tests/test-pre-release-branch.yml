@@ -1,0 +1,44 @@
+name: Test pre-release branch with custom suffix
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - id: action
+        uses: .
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pre_release_branches: "act-harness"
+          append_to_pre_release_tag: "beta"
+          dry_run: "true"
+          default_bump: "patch"
+
+      - name: Assert new_tag contains beta suffix
+        env:
+          NEW_TAG: ${{ steps.action.outputs.new_tag }}
+          NEW_VERSION: ${{ steps.action.outputs.new_version }}
+          RELEASE_TYPE: ${{ steps.action.outputs.release_type }}
+        run: |
+          echo "new_tag: $NEW_TAG"
+          echo "new_version: $NEW_VERSION"
+          echo "release_type: $RELEASE_TYPE"
+          if [ -z "$NEW_TAG" ]; then
+            echo "FAIL: new_tag output is empty"
+            exit 1
+          fi
+          if echo "$NEW_TAG" | grep -q "beta"; then
+            echo "PASS: new_tag contains 'beta' suffix as expected"
+          else
+            echo "FAIL: expected new_tag to contain 'beta', got: $NEW_TAG"
+            exit 1
+          fi
+          if [ -z "$RELEASE_TYPE" ]; then
+            echo "FAIL: release_type output is empty"
+            exit 1
+          fi
+          echo "PASS: release_type=$RELEASE_TYPE"

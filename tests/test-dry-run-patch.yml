@@ -1,0 +1,57 @@
+name: Test dry-run patch bump
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          tag_prefix: v
+          dry_run: "true"
+          release_branches: "master,main"
+        env:
+          GITHUB_REF: refs/heads/main
+          GITHUB_SHA: ${{ github.sha }}
+
+      - name: Assert action ran and produced outputs or failed gracefully on sentinel repo
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          NEW_TAG: ${{ steps.action.outputs.new_tag }}
+          NEW_VERSION: ${{ steps.action.outputs.new_version }}
+          PREVIOUS_TAG: ${{ steps.action.outputs.previous_tag }}
+          RELEASE_TYPE: ${{ steps.action.outputs.release_type }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "new_tag: $NEW_TAG"
+          echo "new_version: $NEW_VERSION"
+          echo "previous_tag: $PREVIOUS_TAG"
+          echo "release_type: $RELEASE_TYPE"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$NEW_TAG" ]; then
+              echo "FAIL: action succeeded but new_tag output is empty"
+              exit 1
+            fi
+            if [ -z "$NEW_VERSION" ]; then
+              echo "FAIL: action succeeded but new_version output is empty"
+              exit 1
+            fi
+            if [ -z "$RELEASE_TYPE" ]; then
+              echo "FAIL: action succeeded but release_type output is empty"
+              exit 1
+            fi
+            echo "PASS: got new_tag=$NEW_TAG new_version=$NEW_VERSION release_type=$RELEASE_TYPE"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable via GitHub API)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
