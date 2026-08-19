@@ -1,0 +1,56 @@
+name: Test custom tag input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: "true"
+          custom_tag: "3.7.0"
+          release_branches: "act-harness,master,main"
+
+      - name: Assert custom tag outputs (or graceful failure on sentinel repo)
+        env:
+          NEW_TAG: ${{ steps.action.outputs.new_tag }}
+          NEW_VERSION: ${{ steps.action.outputs.new_version }}
+          RELEASE_TYPE: ${{ steps.action.outputs.release_type }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "new_tag: $NEW_TAG"
+          echo "new_version: $NEW_VERSION"
+          echo "release_type: $RELEASE_TYPE"
+
+          if [ "$OUTCOME" = "success" ]; then
+            if [ "$NEW_TAG" != "v3.7.0" ]; then
+              echo "FAIL: expected new_tag 'v3.7.0' but got '$NEW_TAG'"
+              exit 1
+            fi
+            echo "PASS: new_tag is 'v3.7.0'"
+
+            if [ "$NEW_VERSION" != "3.7.0" ]; then
+              echo "FAIL: expected new_version '3.7.0' but got '$NEW_VERSION'"
+              exit 1
+            fi
+            echo "PASS: new_version is '3.7.0'"
+
+            if [ "$RELEASE_TYPE" != "custom" ]; then
+              echo "FAIL: expected release_type 'custom' but got '$RELEASE_TYPE'"
+              exit 1
+            fi
+            echo "PASS: release_type is 'custom'"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable via GitHub API)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

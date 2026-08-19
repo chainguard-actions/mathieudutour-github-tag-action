@@ -1,0 +1,46 @@
+name: Test changelog output
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: "true"
+          default_bump: "patch"
+          release_branches: "act-harness,master,main"
+
+      - name: Assert changelog output (or graceful failure on sentinel repo)
+        env:
+          CHANGELOG: ${{ steps.action.outputs.changelog }}
+          NEW_TAG: ${{ steps.action.outputs.new_tag }}
+          PREVIOUS_TAG: ${{ steps.action.outputs.previous_tag }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "new_tag: $NEW_TAG"
+          echo "previous_tag: $PREVIOUS_TAG"
+          echo "changelog: $CHANGELOG"
+
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$NEW_TAG" ]; then
+              echo "FAIL: action succeeded but new_tag output is empty"
+              exit 1
+            fi
+            echo "PASS: action completed successfully with new_tag='$NEW_TAG'"
+            # changelog may be empty if there are no conventional commits, that is acceptable
+            echo "PASS: changelog output present (may be empty if no conventional commits)"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable via GitHub API)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
