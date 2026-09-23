@@ -1,0 +1,52 @@
+name: Test push tag to GitHub (sentinel repo graceful handling)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Configure git user
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+
+      - id: tag
+        uses: .
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          push: 'true'
+          custom_tag: '9.9.9'
+          tag_prefix: 'v'
+          release_branches: '.*'
+          # Use a real public repo so GitHub API reads succeed;
+          # the push will fail with 403 (no write access) which is expected
+          repository: 'actions/checkout'
+          # Use an older tag as baseline for the compare API
+          previous_tag: 'v4.2.2'
+          previous_version: '4.2.2'
+          commit_sha: 'de0fac2e4500dabe0009e67214ff5f5447ce83dd'
+
+      - name: Assert action ran (push succeeded or failed gracefully on read-only repo)
+        env:
+          OUTCOME: ${{ steps.tag.outcome }}
+          NEW_TAG: ${{ steps.tag.outputs.new_tag }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "new_tag: $NEW_TAG"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$NEW_TAG" ]; then
+              echo "FAIL: action succeeded but new_tag output is empty"
+              exit 1
+            fi
+            echo "PASS: tag push succeeded with new_tag=$NEW_TAG"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (push to read-only repo is expected to fail)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

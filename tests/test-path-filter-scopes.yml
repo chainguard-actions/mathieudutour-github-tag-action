@@ -1,0 +1,31 @@
+name: Test path filter and scopes
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - id: action
+        uses: .
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: 'true'
+          push: 'false'
+          path_filter: 'src/**,lib/**'
+          scopes: 'core,api'
+          default_bump: 'patch'
+      - name: Assert outputs are present
+        env:
+          NEW_TAG: ${{ steps.action.outputs.new_tag }}
+          PREVIOUS_TAG: ${{ steps.action.outputs.previous_tag }}
+        run: |
+          echo "new_tag: $NEW_TAG"
+          echo "previous_tag: $PREVIOUS_TAG"
+          if [ -z "$NEW_TAG" ]; then
+            echo "FAIL: expected new_tag to be set"
+            exit 1
+          fi
+          echo "PASS: new_tag=$NEW_TAG"

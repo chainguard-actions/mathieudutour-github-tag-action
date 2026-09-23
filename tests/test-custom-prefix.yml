@@ -1,0 +1,65 @@
+name: Test custom tag prefix
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Configure git user
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+
+      - id: tag
+        uses: .
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: 'true'
+          custom_tag: '3.1.4'
+          tag_prefix: 'release-'
+          release_branches: '.*'
+          # Use a real public repo so GitHub API calls succeed
+          repository: 'actions/checkout'
+          # Use an older tag as baseline; tag_prefix is 'release-' so no existing tags match
+          # previous_tag must be a valid tag in the repo for the compare API
+          previous_tag: 'v4.2.2'
+          previous_version: '4.2.2'
+          # Use a commit SHA that exists in actions/checkout (v6.0.2)
+          commit_sha: 'de0fac2e4500dabe0009e67214ff5f5447ce83dd'
+
+      - name: Assert new_tag has custom prefix
+        env:
+          NEW_TAG: ${{ steps.tag.outputs.new_tag }}
+        run: |
+          echo "new_tag: $NEW_TAG"
+          if [ "$NEW_TAG" != "release-3.1.4" ]; then
+            echo "FAIL: expected new_tag='release-3.1.4', got '$NEW_TAG'"
+            exit 1
+          fi
+          echo "PASS: new_tag=$NEW_TAG"
+
+      - name: Assert new_version has no prefix
+        env:
+          NEW_VERSION: ${{ steps.tag.outputs.new_version }}
+        run: |
+          echo "new_version: $NEW_VERSION"
+          if [ "$NEW_VERSION" != "3.1.4" ]; then
+            echo "FAIL: expected new_version='3.1.4', got '$NEW_VERSION'"
+            exit 1
+          fi
+          echo "PASS: new_version=$NEW_VERSION"
+
+      - name: Assert release_type is custom
+        env:
+          RELEASE_TYPE: ${{ steps.tag.outputs.release_type }}
+        run: |
+          echo "release_type: $RELEASE_TYPE"
+          if [ "$RELEASE_TYPE" != "custom" ]; then
+            echo "FAIL: expected release_type='custom', got '$RELEASE_TYPE'"
+            exit 1
+          fi
+          echo "PASS: release_type=$RELEASE_TYPE"
