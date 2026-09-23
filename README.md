@@ -12,6 +12,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v5.6 | [`v5.6`](https://github.com/chainguard-actions/mathieudutour-github-tag-action/tree/v5.6) | [`4c5d8c5`](https://github.com/mathieudutour/github-tag-action/commit/4c5d8c555a7cc4dca5e65d90b67dcddbb52ef77e) |
 | v6.1 | [`v6.1`](https://github.com/chainguard-actions/mathieudutour-github-tag-action/tree/v6.1) | [`fcfbdce`](https://github.com/mathieudutour/github-tag-action/commit/fcfbdceb3093f6d85a3b194740f8c6cec632f4e2) |
 | v6.2 | [`v6.2`](https://github.com/chainguard-actions/mathieudutour-github-tag-action/tree/v6.2) | [`a22cf08`](https://github.com/mathieudutour/github-tag-action/commit/a22cf08638b34d5badda920f9daf6e72c477b07b) |
+| v7 | [`v7`](https://github.com/chainguard-actions/mathieudutour-github-tag-action/tree/v7) | [`af99e60`](https://github.com/mathieudutour/github-tag-action/commit/af99e60ce8132224b8e6ebab5023449fe256ed46) |
 
 ## Privacy
 
